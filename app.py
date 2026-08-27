@@ -71,6 +71,14 @@ def call_solar(messages: list[dict[str, str]]) -> str | None:
 
 def local_tutor(prompt: str) -> str:
     text = prompt.lower()
+    if text.strip() in ["ㅇㅇ", "응", "네", "좋아", "알겠어"]:
+        return "좋아요. 이번에는 ‘ELIZA와 Solar는 무엇이 다를까?’ 또는 ‘AI는 오늘날 어디에 쓰일까?’라고 질문해 보세요. 질문을 조금 구체적으로 만들수록 더 좋은 답을 얻을 수 있습니다."
+    if any(word in text for word in ["eliza", "엘리자"]):
+        return "ELIZA는 1966년에 만들어진 초기 챗봇입니다. 사용자의 문장에서 특정 단어나 패턴을 찾은 뒤, 미리 정해 둔 문장 틀에 끼워 넣어 상담사처럼 답했습니다. 그래서 대화하는 느낌은 줄 수 있었지만, 문장의 의미를 실제로 이해한 것은 아니었습니다."
+    if any(word in text for word in ["오늘날", "어디에", "활용", "사용", "쓰일", "쓰여"]):
+        return "오늘날 AI는 검색·추천, 번역·음성 비서, 문서 요약, 이미지·음악 생성, 질의응답 등에 활용됩니다. 공통점은 많은 데이터에서 패턴을 찾아 사람의 판단이나 창작을 돕는다는 것입니다. 다만 결과가 항상 사실인 것은 아니므로 중요한 내용은 사람이 확인해야 합니다."
+    if any(word in text for word in ["차이", "비교", "다른"]):
+        return "ELIZA는 정해진 패턴을 찾아 답하는 규칙 기반 챗봇이고, Solar 같은 현대 LLM은 대규모 데이터에서 학습한 언어 패턴과 대화 맥락을 바탕으로 답을 생성합니다. 따라서 Solar가 훨씬 다양한 표현에 대응하지만, 그 답이 항상 정확하다는 뜻은 아닙니다."
     if any(word in text for word in ["튜링", "turing", "생각"]):
         return "튜링 테스트는 대화 상대가 사람인지 기계인지 판별하기 어려운 상황을 지능의 기준으로 삼자는 제안입니다. 다만 대화를 잘하는 것과 실제로 이해하는 것은 같은 의미가 아닐 수 있어요."
     if any(word in text for word in ["퍼셉트론", "perceptron", "가중치"]):
@@ -139,6 +147,11 @@ def render_attention() -> None:
 
 def render_solar() -> None:
     st.subheader("⑤ ELIZA에서 Solar까지: AI에게 질문하기"); st.caption("초기 챗봇은 규칙을 따라 답했고, 현대 LLM은 문맥을 바탕으로 답을 생성합니다. 질문의 질과 답변의 한계를 비교해 보세요.")
+    api_key = st.secrets.get("UPSTAGE_API_KEY", os.getenv("UPSTAGE_API_KEY", ""))
+    if api_key:
+        st.caption("🟢 Solar API 연결됨 · 실제 API 응답을 사용합니다.")
+    else:
+        st.caption("🟠 체험용 로컬 튜터 · Solar API 키를 설정하면 더 다양한 질문에 답합니다.")
     if "messages" not in st.session_state: st.session_state.messages=[]
     for message in st.session_state.messages:
         with st.chat_message(message["role"]): st.markdown(message["content"])
