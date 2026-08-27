@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import math
 import os
+import random
 from pathlib import Path
 from typing import Any
 
@@ -19,10 +21,10 @@ EVENTS: list[dict[str, Any]] = [
     {"phase":"기초를 만든 시대","period":"1950 — 1986","year":1969,"title":"쉐이키","english":"Shakey","maker":"스탠퍼드 연구소","tags":["로봇","계획","센서"],"summary":"센서로 주변을 인식하고 경로를 계획해 움직인 초기 모바일 지능형 로봇입니다.","meaning":"인식·계획·행동을 연결하는 지능 에이전트의 원형입니다.","lab":"overview"},
     {"phase":"기초를 만든 시대","period":"1950 — 1986","year":1972,"title":"MYCIN","english":"MYCIN","maker":"스탠퍼드 대학 의대","tags":["전문가 시스템","IF-THEN"],"summary":"의학 규칙을 바탕으로 감염성 질환을 진단하고 항생제를 추천한 규칙 기반 시스템입니다.","meaning":"규칙을 명시하면 특정 영역의 추론을 자동화할 수 있었습니다.","lab":"tree"},
     {"phase":"기초를 만든 시대","period":"1950 — 1986","year":1980,"title":"결정트리 ID3","english":"Decision Tree / ID3","maker":"로스 퀸란","tags":["분류","데이터","규칙"],"summary":"데이터의 정보 획득량을 계산해 의사결정 규칙을 나무 구조로 학습합니다.","meaning":"모델이 왜 그런 결정을 했는지 사람이 읽을 수 있는 화이트박스 접근입니다.","lab":"tree"},
-    {"phase":"기초를 만든 시대","period":"1950 — 1986","year":1986,"title":"역전파 알고리즘","english":"Backpropagation","maker":"힌턴·럼멜하트 등","tags":["학습","오차","다층 신경망"],"summary":"출력 오차를 뒤쪽에서 앞쪽으로 전달해 여러 층의 가중치를 수정하는 학습법입니다.","meaning":"다층 신경망을 실제로 학습시킬 수 있게 해 AI의 부활을 이끌었습니다.","lab":"perceptron"},
+    {"phase":"기초를 만든 시대","period":"1950 — 1986","year":1986,"title":"역전파 알고리즘","english":"Backpropagation","maker":"힌턴·럼멜하트 등","tags":["학습","오차","다층 신경망"],"summary":"출력 오차를 뒤쪽에서 앞쪽으로 전달해 여러 층의 가중치를 수정하는 학습법입니다.","meaning":"다층 신경망을 실제로 학습시킬 수 있게 해 AI의 부활을 이끌었습니다.","lab":"backprop"},
     {"phase":"확장과 대중화의 시대","period":"1996 — 2023","year":1996,"title":"BookMatch","english":"Personalized Recommendation","maker":"아마존","tags":["추천","개인화","상용화"],"summary":"구매·평가 데이터를 분석해 고객 취향에 맞는 책을 추천하는 대규모 상용 시스템입니다.","meaning":"AI가 연구실을 넘어 일상 서비스의 의사결정에 들어온 사례입니다.","lab":"tree"},
     {"phase":"확장과 대중화의 시대","period":"1996 — 2023","year":1997,"title":"IBM 딥블루","english":"Deep Blue","maker":"IBM","tags":["탐색","체스","계산"],"summary":"고성능 병렬 컴퓨터와 탐색 알고리즘으로 체스 세계 챔피언을 이겼습니다.","meaning":"특정 문제에서 계산 능력과 탐색 전략이 인간을 넘어설 수 있음을 보였습니다.","lab":"search"},
-    {"phase":"확장과 대중화의 시대","period":"1996 — 2023","year":2006,"title":"딥러닝","english":"Deep Learning","maker":"제프리 힌턴","tags":["DNN","표현 학습","GPU"],"summary":"깊은 신경망을 효과적으로 사전 학습하는 방법이 발전하며 현대 AI 혁명의 기반이 마련됐습니다.","meaning":"데이터와 컴퓨팅 파워가 결합해 학습 규모를 크게 확장했습니다.","lab":"perceptron"},
+    {"phase":"확장과 대중화의 시대","period":"1996 — 2023","year":2006,"title":"딥러닝","english":"Deep Learning","maker":"제프리 힌턴","tags":["DNN","표현 학습","GPU"],"summary":"깊은 신경망을 효과적으로 사전 학습하는 방법이 발전하며 현대 AI 혁명의 기반이 마련됐습니다.","meaning":"데이터와 컴퓨팅 파워가 결합해 학습 규모를 크게 확장했습니다.","lab":"deep_learning"},
     {"phase":"확장과 대중화의 시대","period":"1996 — 2023","year":2011,"title":"IBM 왓슨","english":"Watson","maker":"IBM","tags":["질의응답","자연어","추론"],"summary":"자연어 질문을 분석하고 지식에서 답을 찾아 퀴즈 쇼에서 우승한 시스템입니다.","meaning":"AI가 자연어의 의미를 다루는 방향으로 확장됐습니다.","lab":"solar"},
     {"phase":"확장과 대중화의 시대","period":"1996 — 2023","year":2014,"title":"GAN과 Alexa","english":"GAN & Voice Assistant","maker":"이안 굿펠로우·아마존","tags":["생성","음성","에이전트"],"summary":"GAN은 새로운 이미지를 생성하고, Alexa는 음성 기반 AI 비서를 대중화했습니다.","meaning":"AI가 분류·예측을 넘어 콘텐츠 생성과 상호작용으로 이동했습니다.","lab":"solar"},
     {"phase":"확장과 대중화의 시대","period":"1996 — 2023","year":2016,"title":"알파고","english":"AlphaGo","maker":"Google DeepMind·이세돌","tags":["강화학습","바둑","MCTS"],"summary":"딥러닝과 몬테카를로 트리 탐색으로 바둑에서 인간 최고 수준의 직관을 넘어섰습니다.","meaning":"환경과 상호작용하며 좋은 행동을 찾는 강화학습의 가능성을 보여줬습니다.","lab":"search"},
@@ -37,6 +39,16 @@ QUIZ = [
     ("트랜스포머의 핵심 메커니즘은 무엇인가요?", ["Attention", "IF-THEN", "센서", "구매 이력"], 0, "어텐션은 문맥 안 단어 간 관계를 계산하는 핵심 장치입니다."),
     ("PDF가 제시하는 AI 발전의 세 가지 동력은 무엇인가요?", ["데이터·GPU·신경망 모델", "로봇·카메라·마이크", "규칙·책·체스", "검색·광고·음성"], 0, "자료는 데이터, 컴퓨팅 파워(GPU), 혁신적 신경망 모델의 결합을 강조합니다."),
 ]
+
+LAB_LABELS = {
+    "perceptron": "퍼셉트론",
+    "backprop": "역전파",
+    "deep_learning": "딥러닝",
+    "tree": "결정트리·추천",
+    "search": "탐색과 강화학습",
+    "attention": "트랜스포머 어텐션",
+    "solar": "ELIZA ↔ Solar 대화",
+}
 
 def inject_css() -> None:
     st.markdown("""<style>
@@ -109,7 +121,7 @@ def render_timeline() -> None:
     tag_html = "".join(f"<span class='pill'>{tag}</span>" for tag in selected["tags"])
     st.markdown(f'<div class="card"><div class="year">{selected["year"]} · {selected["english"]}</div><h2>{selected["title"]}</h2><p><b>{selected["maker"]}</b></p><p>{selected["summary"]}</p><div>{tag_html}</div></div>', unsafe_allow_html=True); st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(f'<div class="quote"><b>왜 중요할까요?</b><br>{selected["meaning"]}</div>', unsafe_allow_html=True)
-    if selected["lab"] != "overview": st.success(f"체험 연결: 체험실의 ‘{selected['lab']}’ 모듈에서 이 아이디어를 직접 확인해 보세요.")
+    if selected["lab"] != "overview": st.success(f"체험 연결: 체험실의 ‘{LAB_LABELS.get(selected['lab'], selected['lab'])}’ 모듈에서 이 아이디어를 직접 확인해 보세요.")
     st.subheader("전체 흐름"); timeline = "".join(f'<p><b>{e["year"]}</b>　{e["title"]} <span class="small">— {e["english"]}</span></p>' for e in events); st.markdown(f'<div class="timeline-line">{timeline}</div>', unsafe_allow_html=True)
 
 def render_perceptron() -> None:
@@ -120,6 +132,146 @@ def render_perceptron() -> None:
     with c: bias=st.slider("편향 b",-2.0,2.0,-0.5,0.1); threshold=st.slider("임계값",-2.0,2.0,0.0,0.1)
     score=x1*w1+x2*w2+bias; output=int(score>=threshold); st.metric("계산 결과",f"{output} (score = {score:.2f})","1 = 활성화" if output else "0 = 비활성화")
     st.code(f"{x1:.1f} × {w1:.1f} + {x2:.1f} × {w2:.1f} + {bias:.1f} = {score:.2f}\n{score:.2f} >= {threshold:.2f} → {output}"); st.info("가중치는 각 입력을 얼마나 중요하게 볼지 조절합니다. 가중치와 편향을 바꾸면서 AND/OR 같은 규칙을 만들어 보세요.")
+
+def render_backprop() -> None:
+    st.subheader("② 역전파 학습 실험")
+    st.caption("한 개의 뉴런을 단순화해, 예측 오차가 가중치와 편향을 어떻게 수정하는지 확인합니다.")
+    a, b, c = st.columns(3)
+    with a:
+        x = st.slider("입력 x", -2.0, 2.0, 1.0, 0.1)
+        target = st.slider("정답 y", -5.0, 5.0, 3.0, 0.5)
+    with b:
+        initial_weight = st.slider("초기 가중치 w", -5.0, 5.0, 0.0, 0.5)
+        initial_bias = st.slider("초기 편향 b", -5.0, 5.0, 0.0, 0.5)
+    with c:
+        learning_rate = st.slider("학습률", 0.01, 1.0, 0.2, 0.01)
+        steps = st.slider("학습 반복 횟수", 1, 30, 10)
+
+    weight, bias = initial_weight, initial_bias
+    losses = []
+    for _ in range(steps):
+        prediction = weight * x + bias
+        error = prediction - target
+        losses.append(0.5 * error * error)
+        gradient = error
+        weight -= learning_rate * gradient * x
+        bias -= learning_rate * gradient
+    final_prediction = weight * x + bias
+    final_error = final_prediction - target
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("최종 예측", f"{final_prediction:.2f}")
+    m2.metric("정답과의 오차", f"{abs(final_error):.2f}")
+    m3.metric("최종 손실", f"{losses[-1]:.2f}")
+    st.line_chart({"손실": losses}, height=220)
+    st.code(
+        "예측 = w × x + b\n"
+        "오차 = 예측 - 정답\n"
+        "w ← w - 학습률 × 오차 × x\n"
+        "b ← b - 학습률 × 오차"
+    )
+    st.info("실제 다층 신경망에서는 출력층의 오차를 앞쪽 층으로 전달하며 같은 원리를 반복합니다. 이것이 ‘뒤로 전파한다’는 뜻의 역전파입니다.")
+
+def sigmoid(value: float) -> float:
+    value = max(-60.0, min(60.0, value))
+    return 1.0 / (1.0 + math.exp(-value))
+
+def train_xor(hidden_layers: int, epochs: int, learning_rate: float) -> tuple[list[float], list[float]]:
+    architecture = [2] + [3] * hidden_layers + [1]
+    rng = random.Random(7)
+    weights = [
+        [[rng.uniform(-1.0, 1.0) for _ in range(out_size)] for _ in range(in_size)]
+        for in_size, out_size in zip(architecture[:-1], architecture[1:])
+    ]
+    biases = [[0.0 for _ in range(size)] for size in architecture[1:]]
+    dataset = [([0.0, 0.0], 0.0), ([0.0, 1.0], 1.0), ([1.0, 0.0], 1.0), ([1.0, 1.0], 0.0)]
+    losses = []
+
+    for _ in range(epochs):
+        gradient_weights = [[[0.0 for _ in row] for row in layer] for layer in weights]
+        gradient_biases = [[0.0 for _ in layer] for layer in biases]
+        total_loss = 0.0
+        for features, target in dataset:
+            activations = [features]
+            for layer_index, layer in enumerate(weights):
+                previous = activations[-1]
+                current = [
+                    sigmoid(sum(previous[i] * layer[i][j] for i in range(len(previous))) + biases[layer_index][j])
+                    for j in range(len(layer[0]))
+                ]
+                activations.append(current)
+
+            prediction = activations[-1][0]
+            error = prediction - target
+            total_loss += 0.5 * error * error
+            deltas: list[list[float] | None] = [None] * len(weights)
+            deltas[-1] = [error * prediction * (1.0 - prediction)]
+            for layer_index in range(len(weights) - 2, -1, -1):
+                current_activation = activations[layer_index + 1]
+                next_deltas = deltas[layer_index + 1]
+                next_weights = weights[layer_index + 1]
+                deltas[layer_index] = [
+                    current_activation[i] * (1.0 - current_activation[i]) * sum(
+                        next_weights[i][j] * next_deltas[j] for j in range(len(next_deltas))
+                    )
+                    for i in range(len(current_activation))
+                ]
+
+            for layer_index, delta_layer in enumerate(deltas):
+                assert delta_layer is not None
+                for i in range(len(activations[layer_index])):
+                    for j in range(len(delta_layer)):
+                        gradient_weights[layer_index][i][j] += activations[layer_index][i] * delta_layer[j]
+                for j, delta in enumerate(delta_layer):
+                    gradient_biases[layer_index][j] += delta
+
+        sample_count = len(dataset)
+        for layer_index in range(len(weights)):
+            for i in range(len(weights[layer_index])):
+                for j in range(len(weights[layer_index][i])):
+                    weights[layer_index][i][j] -= learning_rate * gradient_weights[layer_index][i][j] / sample_count
+            for j in range(len(biases[layer_index])):
+                biases[layer_index][j] -= learning_rate * gradient_biases[layer_index][j] / sample_count
+        losses.append(total_loss / sample_count)
+
+    predictions = []
+    for features, _ in dataset:
+        activation = features
+        for layer_index, layer in enumerate(weights):
+            activation = [
+                sigmoid(sum(activation[i] * layer[i][j] for i in range(len(activation))) + biases[layer_index][j])
+                for j in range(len(layer[0]))
+            ]
+        predictions.append(activation[0])
+    return losses, predictions
+
+def render_deep_learning() -> None:
+    st.subheader("③ 딥러닝으로 XOR 풀기")
+    st.caption("단순한 한 층의 뉴런으로는 어려운 XOR 문제를 은닉층이 있는 작은 신경망으로 학습합니다.")
+    a, b, c = st.columns(3)
+    with a:
+        hidden_layers = st.slider("은닉층 수", 0, 3, 2)
+    with b:
+        epochs = st.slider("학습 횟수", 100, 2000, 800, 100)
+    with c:
+        learning_rate = st.slider("학습률", 0.05, 1.0, 0.5, 0.05)
+
+    losses, predictions = train_xor(hidden_layers, epochs, learning_rate)
+    architecture = " → ".join(["입력 2"] + ["은닉 뉴런 3"] * hidden_layers + ["출력 1"])
+    st.markdown(f'<div class="card"><div class="year">현재 신경망 구조</div><h3>{architecture}</h3><p>앞쪽 층은 입력을 조합해 중간 표현을 만들고, 뒤쪽 층은 그 표현으로 최종 분류를 수행합니다.</p></div>', unsafe_allow_html=True)
+    st.line_chart({"손실": losses}, height=220)
+
+    rows = []
+    for features, target, prediction in zip([[0, 0], [0, 1], [1, 0], [1, 1]], [0, 1, 1, 0], predictions):
+        rows.append({"입력": str(features), "정답": target, "예측 확률": f"{prediction:.2f}", "분류 결과": int(prediction >= 0.5)})
+    st.dataframe(rows, hide_index=True, use_container_width=True)
+    accuracy = sum(int((prediction >= 0.5) == bool(target)) for target, prediction in zip([0, 1, 1, 0], predictions)) / 4
+    st.metric("최종 정확도", f"{accuracy * 100:.0f}%")
+    if hidden_layers == 0:
+        st.warning("은닉층이 0개이면 직선 하나로 XOR을 나눠야 하므로 정확히 학습하기 어렵습니다. 은닉층을 1개 이상으로 바꿔 보세요.")
+    else:
+        st.success("은닉층이 입력을 새로운 표현으로 바꾸면서 직선 하나로 나누기 어려운 XOR 패턴을 해결했습니다.")
+    st.caption("교육용으로 작게 만든 신경망이며, 실제 딥러닝 모델의 성능이나 학습 방식을 그대로 재현한 것은 아닙니다.")
 
 def render_tree() -> None:
     st.subheader("② 결정트리·추천 실험"); st.caption("사람이 읽을 수 있는 IF-THEN 규칙만으로도 간단한 추천 시스템을 만들 수 있습니다.")
@@ -162,8 +314,10 @@ def render_solar() -> None:
 
 def render_lab() -> None:
     st.title("AI 체험실"); st.caption("기술의 이름을 외우는 대신, 입력을 바꿔 보며 원리가 어떻게 결과를 만드는지 확인합니다.")
-    module=st.selectbox("체험 모듈",["퍼셉트론","결정트리·추천","탐색과 강화학습","트랜스포머 어텐션","ELIZA ↔ Solar 대화"])
+    module=st.selectbox("체험 모듈",["퍼셉트론","역전파","딥러닝 · XOR","결정트리·추천","탐색과 강화학습","트랜스포머 어텐션","ELIZA ↔ Solar 대화"])
     if module=="퍼셉트론": render_perceptron()
+    elif module=="역전파": render_backprop()
+    elif module=="딥러닝 · XOR": render_deep_learning()
     elif module=="결정트리·추천": render_tree()
     elif module=="탐색과 강화학습": render_search()
     elif module=="트랜스포머 어텐션": render_attention()
