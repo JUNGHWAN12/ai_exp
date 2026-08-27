@@ -66,6 +66,10 @@ def inject_css() -> None:
     .quote { border-left:4px solid var(--mint); background:#effcf8; border-radius:0 16px 16px 0; padding:1rem 1.2rem; color:#315d56; line-height:1.7; }
     .metric { background:#fff; border:1px solid #e7edf5; border-radius:18px; padding:1rem; } .metric strong { display:block; font:700 2rem 'Space Grotesk'; color:var(--ink); }
     .timeline-line { border-left:2px solid #cfe0ff; padding-left:1.4rem; margin:1rem 0; } .small { color:var(--muted); font-size:.9rem; }
+    .loss-chart { background:#fff; border:1px solid #e7edf5; border-radius:18px; padding:1rem; margin:1rem 0; }
+    .result-table { width:100%; border-collapse:collapse; background:#fff; border:1px solid #e7edf5; border-radius:14px; overflow:hidden; margin:1rem 0; }
+    .result-table th, .result-table td { padding:.7rem .85rem; border-bottom:1px solid #edf1f6; text-align:left; }
+    .result-table th { color:var(--muted); font-size:.85rem; background:#f8fafc; }
     </style>""", unsafe_allow_html=True)
 
 def call_solar(messages: list[dict[str, str]]) -> str | None:
@@ -133,6 +137,21 @@ def render_perceptron() -> None:
     score=x1*w1+x2*w2+bias; output=int(score>=threshold); st.metric("계산 결과",f"{output} (score = {score:.2f})","1 = 활성화" if output else "0 = 비활성화")
     st.code(f"{x1:.1f} × {w1:.1f} + {x2:.1f} × {w2:.1f} + {bias:.1f} = {score:.2f}\n{score:.2f} >= {threshold:.2f} → {output}"); st.info("가중치는 각 입력을 얼마나 중요하게 볼지 조절합니다. 가중치와 편향을 바꾸면서 AND/OR 같은 규칙을 만들어 보세요.")
 
+def render_loss_chart(losses: list[float]) -> None:
+    if not losses:
+        return
+    chart_width, chart_height = 720, 180
+    minimum, maximum = min(losses), max(losses)
+    spread = maximum - minimum or 1.0
+    points = " ".join(
+        f"{index * chart_width / max(1, len(losses) - 1):.1f},{chart_height - ((loss - minimum) / spread) * (chart_height - 20) - 10:.1f}"
+        for index, loss in enumerate(losses)
+    )
+    st.markdown(
+        f'<div class="loss-chart"><div class="small">학습 손실 변화</div><svg viewBox="0 0 {chart_width} {chart_height + 20}" width="100%" height="180" role="img" aria-label="학습 손실 그래프"><line x1="0" y1="{chart_height}" x2="{chart_width}" y2="{chart_height}" stroke="#dbe4f0"/><polyline points="{points}" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="small">시작: {losses[0]:.4f} · 마지막: {losses[-1]:.4f}</div></div>',
+        unsafe_allow_html=True,
+    )
+
 def render_backprop() -> None:
     st.subheader("② 역전파 학습 실험")
     st.caption("한 개의 뉴런을 단순화해, 예측 오차가 가중치와 편향을 어떻게 수정하는지 확인합니다.")
@@ -163,7 +182,7 @@ def render_backprop() -> None:
     m1.metric("최종 예측", f"{final_prediction:.2f}")
     m2.metric("정답과의 오차", f"{abs(final_error):.2f}")
     m3.metric("최종 손실", f"{losses[-1]:.2f}")
-    st.line_chart({"손실": losses}, height=220)
+    render_loss_chart(losses)
     st.code(
         "예측 = w × x + b\n"
         "오차 = 예측 - 정답\n"
@@ -183,7 +202,7 @@ def train_xor(hidden_layers: int, epochs: int, learning_rate: float) -> tuple[li
         [[rng.uniform(-1.0, 1.0) for _ in range(out_size)] for _ in range(in_size)]
         for in_size, out_size in zip(architecture[:-1], architecture[1:])
     ]
-    biases = [[0.0 for _ in range(size)] for size in architecture[1:]]
+    biases = [[rng.uniform(-0.5, 0.5) for _ in range(size)] for size in architecture[1:]]
     dataset = [([0.0, 0.0], 0.0), ([0.0, 1.0], 1.0), ([1.0, 0.0], 1.0), ([1.0, 1.0], 0.0)]
     losses = []
 
@@ -195,10 +214,10 @@ def train_xor(hidden_layers: int, epochs: int, learning_rate: float) -> tuple[li
             activations = [features]
             for layer_index, layer in enumerate(weights):
                 previous = activations[-1]
-                current = [
-                    sigmoid(sum(previous[i] * layer[i][j] for i in range(len(previous))) + biases[layer_index][j])
-                    for j in range(len(layer[0]))
-                ]
+                current = []
+                for j in range(len(layer[0])):
+                    value = sum(previous[i] * layer[i][j] for i in range(len(previous))) + biases[layer_index][j]
+                    current.append(sigmoid(value) if layer_index == len(weights) - 1 else math.tanh(value))
                 activations.append(current)
 
             prediction = activations[-1][0]
@@ -211,7 +230,7 @@ def train_xor(hidden_layers: int, epochs: int, learning_rate: float) -> tuple[li
                 next_deltas = deltas[layer_index + 1]
                 next_weights = weights[layer_index + 1]
                 deltas[layer_index] = [
-                    current_activation[i] * (1.0 - current_activation[i]) * sum(
+                    (1.0 - current_activation[i] ** 2) * sum(
                         next_weights[i][j] * next_deltas[j] for j in range(len(next_deltas))
                     )
                     for i in range(len(current_activation))
@@ -240,6 +259,8 @@ def train_xor(hidden_layers: int, epochs: int, learning_rate: float) -> tuple[li
         for layer_index, layer in enumerate(weights):
             activation = [
                 sigmoid(sum(activation[i] * layer[i][j] for i in range(len(activation))) + biases[layer_index][j])
+                if layer_index == len(weights) - 1
+                else math.tanh(sum(activation[i] * layer[i][j] for i in range(len(activation))) + biases[layer_index][j])
                 for j in range(len(layer[0]))
             ]
         predictions.append(activation[0])
@@ -259,12 +280,16 @@ def render_deep_learning() -> None:
     losses, predictions = train_xor(hidden_layers, epochs, learning_rate)
     architecture = " → ".join(["입력 2"] + ["은닉 뉴런 3"] * hidden_layers + ["출력 1"])
     st.markdown(f'<div class="card"><div class="year">현재 신경망 구조</div><h3>{architecture}</h3><p>앞쪽 층은 입력을 조합해 중간 표현을 만들고, 뒤쪽 층은 그 표현으로 최종 분류를 수행합니다.</p></div>', unsafe_allow_html=True)
-    st.line_chart({"손실": losses}, height=220)
+    render_loss_chart(losses)
 
     rows = []
     for features, target, prediction in zip([[0, 0], [0, 1], [1, 0], [1, 1]], [0, 1, 1, 0], predictions):
         rows.append({"입력": str(features), "정답": target, "예측 확률": f"{prediction:.2f}", "분류 결과": int(prediction >= 0.5)})
-    st.dataframe(rows, hide_index=True, use_container_width=True)
+    table_rows = "".join(
+        f'<tr><td>{row["입력"]}</td><td>{row["정답"]}</td><td>{row["예측 확률"]}</td><td>{row["분류 결과"]}</td></tr>'
+        for row in rows
+    )
+    st.markdown(f'<table class="result-table"><thead><tr><th>입력</th><th>정답</th><th>예측 확률</th><th>분류 결과</th></tr></thead><tbody>{table_rows}</tbody></table>', unsafe_allow_html=True)
     accuracy = sum(int((prediction >= 0.5) == bool(target)) for target, prediction in zip([0, 1, 1, 0], predictions)) / 4
     st.metric("최종 정확도", f"{accuracy * 100:.0f}%")
     if hidden_layers == 0:
